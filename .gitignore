@@ -1,0 +1,8 @@
+# keep raw event data out of the public repo
+*.csv
+
+# local/editor noise
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc
