@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>40in40 — Two Days, 48 Dances</title>
+<style>
+  :root{
+    --bg:#090c16; --panel:#121727; --panel2:#171d31; --line:#2a3350;
+    --fg:#eef1fb; --muted:#9aa3bd; --pink:#ff5c8a; --cyan:#22d3ee;
+    --teal:#4ecdc4; --yellow:#ffd93d; --violet:#a78bfa; --orange:#ff9f43;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:
+      radial-gradient(1200px 600px at 15% -5%, #201535 0%, transparent 60%),
+      radial-gradient(900px 500px at 95% 0%, #0c2b35 0%, transparent 55%),
+      var(--bg);
+      color:var(--fg);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:56px 26px 90px}
+  header{padding:20px 0 38px;border-bottom:1px solid var(--line)}
+  .eyebrow{letter-spacing:.22em;text-transform:uppercase;font-size:12px;font-weight:700;color:var(--pink)}
+  h1{font-size:clamp(42px,6vw,76px);line-height:.98;margin:14px 0 16px;letter-spacing:-.03em}
+  h1 span{background:linear-gradient(90deg,var(--pink),var(--orange),var(--yellow));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .lede{font-size:19px;color:var(--muted);max-width:820px;margin:0}
+  .route{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+  .chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:8px 14px;font-size:13px;color:var(--muted)}
+  .chip b{color:var(--fg)}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:38px 0 12px}
+  .kpi{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;position:relative;overflow:hidden}
+  .kpi:before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,var(--pink),var(--violet))}
+  .kpi .n{font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+  .kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-top:6px}
+  .kpi .s{font-size:12px;color:var(--muted);margin-top:4px}
+  h2{font-size:30px;letter-spacing:-.02em;margin:58px 0 8px}
+  h2 .num{color:var(--pink);font-variant-numeric:tabular-nums;margin-right:12px}
+  .sub{color:var(--muted);margin:0 0 22px;max-width:900px}
+  .chart{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:10px;box-shadow:0 30px 80px rgba(0,0,0,.35)}
+  .chart img{display:block;width:100%;height:auto;border-radius:12px}
+  .cap{font-size:12px;color:var(--muted);padding:12px 8px 4px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:820px){.grid2{grid-template-columns:1fr}}
+  .insights{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 0 0}
+  @media(max-width:820px){.insights{grid-template-columns:1fr}}
+  .ins{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--pink);border-radius:0 14px 14px 0;padding:16px 18px}
+  .ins.cyan{border-left-color:var(--cyan)} .ins.yellow{border-left-color:var(--yellow)}
+  .ins.violet{border-left-color:var(--violet)} .ins.teal{border-left-color:var(--teal)}
+  .ins .t{font-weight:750;font-size:14px;margin-bottom:5px}
+  .ins p{margin:0;color:var(--muted);font-size:14.5px}
+  .ins b{color:var(--fg)}
+  ul.tight{margin:14px 0 0;padding-left:20px;color:var(--muted)}
+  ul.tight li{margin:9px 0}
+  ul.tight b{color:var(--fg)}
+  table{width:100%;border-collapse:collapse;margin-top:18px;font-size:14px;background:var(--panel);border-radius:14px;overflow:hidden}
+  th,td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--line)}
+  th{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);background:var(--panel2)}
+  tr:last-child td{border-bottom:none}
+  td.n{font-variant-numeric:tabular-nums;font-weight:700}
+  .pill{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:1px}
+  blockquote{margin:22px 0 0;padding:18px 22px;border-left:4px solid var(--violet);background:var(--panel);color:var(--muted);border-radius:0 14px 14px 0}
+  blockquote b{color:var(--fg)}
+  footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  code{background:#0c1120;border:1px solid var(--line);padding:1px 6px;border-radius:6px;color:var(--teal);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Forty in forty · dance crawl analysis</div>
+  <h1>Two days.<br><span>48 dances.</span></h1>
+  <p class="lede">A pub-by-pub look at the timing, the pace, the dancers and the roles behind a 48-dance weekend across six towns in the North.</p>
+  <div class="route">
+    <div class="chip"><b>Fri</b> 10:44–22:44 · 28 dances</div>
+    <div class="chip"><b>Sat</b> 11:38–20:40 · 20 dances</div>
+    <div class="chip"><b>6</b> towns · <b>48</b> pubs</div>
+    <div class="chip"><b>16</b> named dancers</div>
+    <div class="chip"><b>21h 02m</b> of clock time</div>
+  </div>
+</header>
+
+<div class="kpis">
+  <div class="kpi"><div class="n">48</div><div class="l">dances</div><div class="s">28 Fri · 20 Sat</div></div>
+  <div class="kpi"><div class="n">2.3</div><div class="l">dances / hour</div><div class="s">Friday 2.33 · Saturday 2.21</div></div>
+  <div class="kpi"><div class="n">26<span style="font-size:18px"> min</span></div><div class="l">median handover</div><div class="s">Friday 26 · Saturday 25</div></div>
+  <div class="kpi"><div class="n">9<span style="font-size:18px"> min</span></div><div class="l">fastest gap</div><div class="s">twice on Friday</div></div>
+  <div class="kpi"><div class="n">75<span style="font-size:18px"> min</span></div><div class="l">longest gap</div><div class="s">Drink, Friday 17:09–18:24</div></div>
+  <div class="kpi"><div class="n">48</div><div class="l">dances for Vic &amp; Tom</div><div class="s">in some role, every single time</div></div>
+</div>
+
+<h2><span class="num">01</span>The shape of the weekend</h2>
+<p class="sub">The route is two very different days: a long, flat Friday crawl through Sowerby Bridge into Hebden Bridge, then a Saturday that hops between four Pennine towns.</p>
+<div class="chart"><img src="01_timeline.png" alt="Timeline of all 48 dances across Friday and Saturday"><div class="cap">Each numbered dot is one dance. Towns are lanes; the faint line shows the order. Train and tram legs are marked.</div></div>
+<div class="insights">
+  <div class="ins"><div class="t">Friday was the marathon</div><p>28 dances over <b>12 hours</b> (10:44 to 22:44), split into <b>12 in Sowerby Bridge</b> (10:44–14:52) and <b>16 in Hebden Bridge</b> (15:54–22:44), bridged by the 15:21 train.</p></div>
+  <div class="ins cyan"><div class="t">Saturday was four hops</div><p><b>Rochdale 9 → Newhey 3 → Milnrow 5 → Littleborough 3</b>, with a tram at 15:15 and the last dance at 20:40. Shorter, but more moving parts.</p></div>
+  <div class="ins yellow"><div class="t">Hebden did the heavy lifting</div><p>One third of all dances (<b>16 of 48</b>) happened in Hebden Bridge. Sowerby Bridge supplied another quarter (12).</p></div>
+  <div class="ins violet"><div class="t">Two travel legs, about 30 minutes each</div><p>The train (Fri 15:21) and tram (Sat 15:15) both land in the middle of the afternoon — the natural hinge of each day.</p></div>
+</div>
+
+<h2><span class="num">02</span>Pace, breaks and handovers</h2>
+<p class="sub">The cumulative-dance chart makes the rhythm obvious: a steady climb, one real sit-down break on Friday, and a slower Saturday that never quite catches up.</p>
+<div class="grid2">
+  <div class="chart"><img src="02_pace.png" alt="Cumulative dances versus clock time for Friday and Saturday"><div class="cap">Cumulative dances against the clock. Steeper line = faster dancing.</div></div>
+  <div class="chart"><img src="06_gaps.png" alt="Distribution of gaps between dance starts"><div class="cap">Every start-to-start gap. Bars behind the dots show how many gaps fall in each 5-minute bin.</div></div>
+</div>
+<ul class="tight">
+  <li><b>Average handover was 27 minutes</b> (46 gaps), and the overall median was <b>25.5 minutes</b>. Friday mean 26.7 / median 26; Saturday mean 28.5 / median 25.</li>
+  <li><b>Fastest turnarounds were 9 minutes</b>, twice on Friday: The Moorings → Temujin and The Hidden Hebden → The White Swan. A third 10-minute sprint came at Hollins Mill → Loose Goose.</li>
+  <li><b>The 75-minute break at Drink</b> (17:09 → 18:24) is the clear outlier — the only gap long enough to read as a proper meal stop. The next longest Friday gap is 62 minutes, which includes the train to Hebden.</li>
+  <li>Saturday's longest gaps were both <b>45 minutes</b>: Moody Blue → Bird in Hand (the tram to Newhey) and The Gallows → The Queens (the move to Littleborough).</li>
+  <li>Friday peaked at 3 dances in each of 11:00, 14:00, 16:00 and 19:00; Saturday was flatter, with 14:00 and 18:00 the only 3-dance hours.</li>
+</ul>
+
+<h2><span class="num">03</span>The dancers</h2>
+<p class="sub">Sixteen people appear somewhere in the data, but the workload is not evenly shared. Two people — Vic and Tom — are present in every one of the 48 dances in some role.</p>
+<div class="chart"><img src="03_workload.png" alt="Stacked bar chart of appearances by role for each dancer"><div class="cap">Total appearances, split by positions, Tommy, Betty and music. F/S dots show which day(s) each person appeared.</div></div>
+<div class="insights">
+  <div class="ins"><div class="t">Vic and Tom: 48/48</div><p><b>Vic</b> played music 47 times and took the Tommy once. <b>Tom</b> covered 16 positions, 9 Tommy slots and 23 music slots. They are the connective tissue of the whole weekend.</p></div>
+  <div class="ins teal"><div class="t">Joe and Ben carried the positions</div><p><b>Joe</b> did 34 position dances and <b>Ben</b> 32. Between them they covered an end in 66 of the 96 end-position slots.</p></div>
+  <div class="ins yellow"><div class="t">John was the support engine</div><p><b>33 appearances</b>: 13 in position 3, 18 as Tommy and the weekend's only 2 Bettys. He was the busiest person after Vic and Tom.</p></div>
+  <div class="ins violet"><div class="t">Day trippers</div><p><b>Simon</b> appeared only on Friday. <b>Oli, Michael, Ed and Richard</b> appeared only on Saturday. Eleven dancers did both days.</p></div>
+</div>
+
+<h2><span class="num">04</span>The five positions</h2>
+<p class="sub">All five positions were filled in all 48 dances, but the people filling them barely moved. The middle of the set is the most stable; the ends are where the substitutions happen.</p>
+<div class="chart"><img src="04_positions.png" alt="Heatmap of each dancer's position usage"><div class="cap">Cell numbers are appearances; the percentage is that dancer's share of their position work. Right-hand dots show which of the five spots they used.</div></div>
+<ul class="tight">
+  <li><b>7 of the 13 position dancers used only one spot.</b> David, Iona and Michael were exclusively position 4; Matt and John exclusively position 3; Oli exclusively position 2; Ed exclusively position 5.</li>
+  <li><b>Ben is the purest end specialist</b>: 31 of his 32 position dances were position 1 (97%). <b>Joe</b> split between the two ends (16 at position 1, 18 at position 5).</li>
+  <li><b>Paul and Jeff were the most versatile</b>, covering three positions each. Paul: 1, 2 and 5; Jeff: 2, 3 and 4.</li>
+  <li>Only the ends really rotate. Positions 2, 3 and 4 are dominated by a fixed group — which is why the same pairings recur all weekend.</li>
+</ul>
+<div class="chart" style="margin-top:18px"><img src="08_codancers.png" alt="Most frequent dance partnerships"><div class="cap">The most frequent five-person line-ups. Joe + Nicol shared 21 of 48 dances, the strongest partnership of the weekend.</div></div>
+
+<h2><span class="num">05</span>The places</h2>
+<p class="sub">Hebden Bridge had the most dances but the slowest rhythm. Newhey was the sprint: three dances in 53 minutes.</p>
+<div class="chart"><img src="05_locations.png" alt="Donut of dances by town and pace by town"><div class="cap">Share of all 48 dances by town (left) and dances per hour within each town's first-to-last dance window (right).</div></div>
+<div class="insights">
+  <div class="ins cyan"><div class="t">Newhey: 3.40 dances/hour</div><p>Three dances between 15:46 and 16:39 — the fastest town pace of the weekend, and the shortest stop.</p></div>
+  <div class="ins"><div class="t">Hebden: most dances, slowest pace</div><p>16 dances over 6h 50m (2.34/hour). The volume came from a long evening session, not a faster turnover.</p></div>
+  <div class="ins yellow"><div class="t">Sowerby Bridge: the warm-up</div><p>12 dances in 4h 08m (2.90/hour), starting at 10:44 and handing over to Hebden just before 15:00.</p></div>
+  <div class="ins violet"><div class="t">Milnrow: a tidy five</div><p>Five dances in 1h 37m (3.09/hour) — the second-fastest pace after Newhey.</p></div>
+</div>
+
+<h2><span class="num">06</span>Tommy, Betty and the band</h2>
+<p class="sub">The support roles were as organised as the five positions. Tommy duty changed hands between the days, Betty barely appeared, and the music was effectively one person with a very reliable deputy.</p>
+<div class="chart"><img src="07_roles.png" alt="Tommy duty and music line-up by day"><div class="cap">Who took the Tommy on each day, and how the music was staffed. Betty (the second Tommy when the field is comma-separated) appeared twice.</div></div>
+<ul class="tight">
+  <li><b>Friday belonged to John</b>: 16 of 28 Tommy slots, with Tom (5), Matt (4), Jeff (2) and Simon (1) filling in.</li>
+  <li><b>Saturday belonged to Richard</b>: 10 of 20 Tommy slots. Tom (4), John (2), Jeff (2), Vic (1) and Matt (1) completed the rota.</li>
+  <li><b>Betty appeared only twice</b>, both on Friday, both John: dances 9 (Hollins Mill) and 12 (The Hog's Head), both while Tom was Tommy.</li>
+  <li><b>Vic carried the music in 47 of 48 dances</b>: 25 solo and 22 alongside Tom. The lone exception is dance 45 at The Gallows, where Vic took the Tommy and Tom played music — the weekend's only full role swap.</li>
+</ul>
+
+<h2><span class="num">07</span>By the numbers</h2>
+<table>
+  <thead><tr><th>Measure</th><th>Friday</th><th>Saturday</th><th>Weekend</th></tr></thead>
+  <tbody>
+    <tr><td>Dances</td><td class="n">28</td><td class="n">20</td><td class="n">48</td></tr>
+    <tr><td>First / last dance</td><td>10:44 / 22:44</td><td>11:38 / 20:40</td><td>10:44 / 22:44</td></tr>
+    <tr><td>Active span</td><td>12h 00m</td><td>9h 02m</td><td>21h 02m</td></tr>
+    <tr><td>Dances per hour</td><td class="n">2.33</td><td class="n">2.21</td><td class="n">2.28</td></tr>
+    <tr><td>Mean gap between starts</td><td class="n">26.7 min</td><td class="n">28.5 min</td><td class="n">27.4 min</td></tr>
+    <tr><td>Median gap</td><td class="n">26 min</td><td class="n">25 min</td><td class="n">25.5 min</td></tr>
+    <tr><td>Shortest / longest gap</td><td>9 / 75 min</td><td>11 / 45 min</td><td>9 / 75 min</td></tr>
+    <tr><td>Unique dancers</td><td class="n">12</td><td class="n">15</td><td class="n">16</td></tr>
+    <tr><td>Towns danced in</td><td class="n">2</td><td class="n">4</td><td class="n">6</td></tr>
+    <tr><td>Pubs danced in</td><td class="n">28</td><td class="n">20</td><td class="n">48</td></tr>
+    <tr><td>Travel legs</td><td>Train 15:21</td><td>Tram 15:15</td><td>2</td></tr>
+  </tbody>
+</table>
+
+<blockquote>
+  <b>The one-line version:</b> this is a remarkably disciplined weekend — fixed positions, a stable band, and a handover rhythm of roughly one dance every 27 minutes — punctuated by two travel hops and one proper 75-minute break. The names change at the ends and in the Tommy role, but the centre of the set barely changes at all.
+</blockquote>
+
+<h2><span class="num">08</span>Method &amp; assumptions</h2>
+<p class="sub">The analysis uses the 50 rows of <code>40in40.csv</code>: 48 dance rows plus two travel rows. Travel rows (Train to Hebden, Tram to Newhey) are excluded from dance counts but included in the timeline and timing narrative.</p>
+<ul class="tight">
+  <li><b>Positions 1–5</b> are treated as five separate dancer appearances. <b>Tommy</b> is counted separately from the five positions. <b>Music</b> is counted separately again.</li>
+  <li>When the Tommy field is comma-separated (e.g. <code>Tom, John</code>), the first name is the Tommy and the second is the <b>Betty</b>. This happens twice, both on Friday.</li>
+  <li>When the Music field is comma-separated (e.g. <code>Vic, Tom</code>), it is treated as two musicians. That is why Vic and Tom can each be present in every dance.</li>
+  <li><b>Gap</b> = time between consecutive dance start times, so it includes the dance itself plus any changeover or travel. It is not the same as time spent in the pub.</li>
+  <li><b>Pace</b> per town = dances divided by the first-to-last dance window in that town, not counting time after the final dance.</li>
+  <li>Names are treated as unique people. If the Tom in the music column is a different Tom from the position-3 Tom, the “every dance” claim for Tom would not hold.</li>
+</ul>
+
+<footer>
+  Generated from <code>/home/wolben06/Downloads/40in40.csv</code> · 48 dances · 16 dancers · 6 towns · 2 days.<br>
+  Charts rendered with Python + Pillow.
+</footer>
+
+</div>
+</body>
+</html>
