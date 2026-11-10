@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>40in40 — Two Days, 48 Dances</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.7.0/dist/maplibre-gl.css">
 <style>
   :root{
     --bg:#090c16; --panel:#121727; --panel2:#171d31; --line:#2a3350;
@@ -59,8 +60,89 @@
   .pill{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:1px}
   blockquote{margin:22px 0 0;padding:18px 22px;border-left:4px solid var(--violet);background:var(--panel);color:var(--muted);border-radius:0 14px 14px 0}
   blockquote b{color:var(--fg)}
+  .timeline-wrap{position:relative;line-height:0}
+  .timeline-wrap img{border-radius:12px}
+  .hotspots{position:absolute;inset:0;pointer-events:none}
+  .hotspot{position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;padding:0;border:0;border-radius:50%;background:transparent;overflow:visible;appearance:none;-webkit-appearance:none;-webkit-tap-highlight-color:transparent;pointer-events:auto;cursor:pointer;font:inherit;color:inherit;text-align:inherit}
+  .hotspot:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+  .hotspot:hover,.hotspot:focus-visible{box-shadow:0 0 0 2px rgba(255,255,255,.55)}
+  .hotspot .tip{position:absolute;left:50%;bottom:calc(100% + 10px);transform:translateX(-50%);width:max-content;max-width:min(260px,60vw);background:#0c1120;border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:12px;line-height:1.4;color:var(--fg);text-align:center;white-space:normal;opacity:0;visibility:hidden;transition:opacity .12s;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.55);z-index:5}
+  .hotspot:hover .tip,.hotspot:focus-visible .tip{opacity:1;visibility:visible}
+  .hotspot .tip b{color:var(--teal)}
+  .hotspot .tip .meta{color:var(--muted);font-size:11px}
+  .hotspot .tip .dance{color:var(--pink);font-weight:700}
+  .hotspot.tip-bottom .tip{top:calc(100% + 10px);bottom:auto}
+  .hotspot.tip-left .tip{left:0;transform:none}
+  .hotspot.tip-right .tip{left:auto;right:0;transform:none}
+  .hotspot.travel .tip{border-color:#475569}
+  .pub-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:16px;margin-top:20px;align-items:start}
+  .pub-town{position:relative;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 18px 10px}
+  .pub-town:before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--town)}
+  .pub-town h3{display:flex;align-items:center;gap:8px;font-size:18px;margin:0 0 2px;letter-spacing:-.01em}
+  .pub-town .dot{width:9px;height:9px;border-radius:50%;background:var(--town);flex:none}
+  .pub-town .count{margin-left:auto;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .pub-town .day{font-size:12px;color:var(--muted);margin-bottom:10px}
+  .pub-list{list-style:none;margin:0;padding:0}
+  .pub-list li{display:grid;grid-template-columns:28px 46px 1fr auto;gap:8px;align-items:start;padding:7px 0;border-bottom:1px solid rgba(42,51,80,.55);font-size:13.5px;line-height:1.45}
+  .pub-list li:last-child{border-bottom:0}
+  .pub-list .n{color:var(--muted);font-variant-numeric:tabular-nums;font-size:11px;text-align:right}
+  .pub-list .time{color:var(--muted);font-variant-numeric:tabular-nums;font-size:12px}
+  .pub-list .name{color:var(--fg)}
+  .pub-list .map{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;color:var(--teal);border-bottom:1px solid transparent}
+  .pub-list .map:hover{border-bottom-color:var(--teal)}
+  .archive-note{font-size:12px;color:var(--muted);margin:14px 0 0}
+  .archive-note b{color:var(--fg)}
   footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
   code{background:#0c1120;border:1px solid var(--line);padding:1px 6px;border-radius:6px;color:var(--teal);font-size:12px}
+  a{color:var(--teal)}
+  .contents{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;margin:26px -26px 4px;padding:11px 26px;background:rgba(9,12,22,.9);border-top:1px solid var(--line);border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}
+  .contents-label{font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+  .contents-links{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+  .contents-links::-webkit-scrollbar{display:none}
+  .contents-links a{flex:none;border:1px solid transparent;border-radius:999px;padding:5px 10px;font-size:12px;color:var(--muted);text-decoration:none;white-space:nowrap}
+  .contents-links a b{color:var(--pink);font-variant-numeric:tabular-nums;margin-right:5px}
+  .contents-links a:hover,.contents-links a:focus-visible{background:var(--panel);border-color:var(--line);color:var(--fg);outline:none}
+  h2[id]{scroll-margin-top:78px}
+  .map-shell{margin-top:20px;padding:18px;background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.25)}
+  .map-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+  .map-title{font-size:18px;font-weight:800;letter-spacing:-.01em}
+  .map-sub{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .map-key{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--muted);white-space:nowrap;padding-top:3px}
+  .map-key span{display:inline-flex;align-items:center;gap:7px}
+  .key-line{display:inline-block;width:22px;border-top:2px dashed var(--pink)}
+  .key-line.sat{border-color:var(--cyan)}
+  .map-jumps{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+  .map-jump{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border:1px solid var(--line);border-radius:999px;background:#0d1324;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;transition:border-color .15s,color .15s,background .15s}
+  .map-jump:hover,.map-jump:focus-visible{border-color:var(--teal);color:var(--fg);background:var(--panel2);outline:none}
+  .map-jump .dot{width:8px;height:8px;border-radius:50%;background:var(--c);flex:none}
+  .map-jump b{color:var(--fg);font-variant-numeric:tabular-nums}
+  .pub-map{height:520px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0b1020;z-index:1}
+  .map-fallback{padding:24px;color:var(--muted);font-size:13px}
+  .map-note{font-size:12px;color:var(--muted);margin:12px 2px 0}
+  .map-note b{color:var(--fg)}
+  .maplibregl-map{font:inherit}
+  .maplibregl-canvas{outline:none}
+  .maplibregl-popup-content{background:#0c1120;color:var(--fg);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.55);padding:12px 14px;font:13px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .maplibregl-popup-content a{color:var(--teal)}
+  .maplibregl-popup-tip{border-top-color:#0c1120;border-bottom-color:#0c1120;border-left-color:#0c1120;border-right-color:#0c1120}
+  .maplibregl-popup-close-button{color:var(--muted);font-size:18px;padding:2px 6px}
+  .maplibregl-popup-close-button:hover{background:transparent;color:var(--fg)}
+  .maplibregl-ctrl-group{background:#121727;border:1px solid var(--line);box-shadow:0 6px 20px rgba(0,0,0,.4)}
+  .maplibregl-ctrl-group button+button{border-top:1px solid var(--line)}
+  .maplibregl-ctrl button .maplibregl-ctrl-icon{filter:invert(1) brightness(1.2)}
+  .maplibregl-ctrl-attrib{background:rgba(9,12,22,.82)!important;color:var(--muted)!important;font-size:10px}
+  .maplibregl-ctrl-attrib a{color:var(--teal)!important}
+  .maplibregl-ctrl-scale{background:rgba(9,12,22,.7);border-color:var(--line);color:var(--muted)}
+  .map-pop-kicker{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--pink);font-weight:800}
+  .map-pop-title{font-size:15px;font-weight:800;margin:2px 0 1px}
+  .map-pop-town{color:var(--muted);font-size:12px}
+  .map-pop a{display:inline-block;margin-top:8px;font-size:12px;font-weight:700;text-decoration:none}
+  @media(max-width:720px){
+    .contents{margin-left:-16px;margin-right:-16px;padding-left:16px;padding-right:16px}
+    .map-head{flex-direction:column;gap:8px}
+    .map-shell{padding:12px}
+    .pub-map{height:440px}
+  }
 </style>
 </head>
 <body>
@@ -79,6 +161,21 @@
   </div>
 </header>
 
+<nav class="contents" aria-label="Report contents">
+  <span class="contents-label">Contents</span>
+  <div class="contents-links">
+    <a href="#shape"><b>01</b>Shape</a>
+    <a href="#pace"><b>02</b>Pace</a>
+    <a href="#places"><b>03</b>Places</a>
+    <a href="#pub-archive"><b>04</b>Pub archive &amp; map</a>
+    <a href="#dancers"><b>05</b>Dancers</a>
+    <a href="#positions"><b>06</b>Positions</a>
+    <a href="#roles"><b>07</b>Tommy &amp; band</a>
+    <a href="#numbers"><b>08</b>Numbers</a>
+    <a href="#method"><b>09</b>Method</a>
+  </div>
+</nav>
+
 <div class="kpis">
   <div class="kpi"><div class="n">48</div><div class="l">dances</div><div class="s">28 Fri · 20 Sat</div></div>
   <div class="kpi"><div class="n">2.3</div><div class="l">dances / hour</div><div class="s">Friday 2.33 · Saturday 2.21</div></div>
@@ -88,9 +185,58 @@
   <div class="kpi"><div class="n">48</div><div class="l">dances for Vic &amp; Tom</div><div class="s">in some role, every single time</div></div>
 </div>
 
-<h2><span class="num">01</span>The shape of the weekend</h2>
+<h2 id="shape"><span class="num">01</span>The shape of the weekend</h2>
 <p class="sub">The route is two very different days: a long, flat Friday crawl through Sowerby Bridge into Hebden Bridge, then a Saturday that hops between four Pennine towns.</p>
-<div class="chart"><img src="01_timeline.png" alt="Timeline of all 48 dances across Friday and Saturday"><div class="cap">Each numbered dot is one dance. Towns are lanes; the faint line shows the order. Train and tram legs are marked.</div></div>
+<div class="chart"><div class="timeline-wrap"><img src="01_timeline.png" alt="Timeline of all 48 dances across Friday and Saturday"><div class="hotspots"><button class="hotspot tip-left" type="button" style="left:16.357%;top:25.227%" aria-label="Dance 1, 10:44, William the Fourth, Sowerby Bridge"><span class="tip"><span class="dance">Dance 1</span> <span class="meta">10:44</span><br><b>William the Fourth</b><br><span class="meta">Sowerby Bridge</span></span></button>
+<button class="hotspot tip-left" type="button" style="left:17.665%;top:23.955%" aria-label="Dance 2, 10:56, Salts Bar, Sowerby Bridge"><span class="tip"><span class="dance">Dance 2</span> <span class="meta">10:56</span><br><b>Salts Bar</b><br><span class="meta">Sowerby Bridge</span></span></button>
+<button class="hotspot tip-left" type="button" style="left:19.409%;top:26.500%" aria-label="Dance 3, 11:12, The Moorings, Sowerby Bridge"><span class="tip"><span class="dance">Dance 3</span> <span class="meta">11:12</span><br><b>The Moorings</b><br><span class="meta">Sowerby Bridge</span></span></button>
+<button class="hotspot tip-left" type="button" style="left:20.389%;top:25.227%" aria-label="Dance 4, 11:21, Temujin, Sowerby Bridge"><span class="tip"><span class="dance">Dance 4</span> <span class="meta">11:21</span><br><b>Temujin</b><br><span class="meta">Sowerby Bridge</span></span></button>
+<button class="hotspot tip-left" type="button" style="left:24.095%;top:23.955%" aria-label="Dance 5, 11:55, The Commercial Inn, Sowerby Bridge"><span class="tip"><span class="dance">Dance 5</span> <span class="meta">11:55</span><br><b>The Commercial Inn</b><br><span class="meta">Sowerby Bridge</span></span></button>
+<button class="hotspot tip-left" type="button" style="left:26.928%;top:26.500%" aria-label="Dance 6, 12:21, The Navigation, Sowerby Bridge"><span class="tip"><span class="dance">Dance 6</span> <span class="meta">12:21</span><br><b>The Navigation</b><br><span class="meta">Sowerby Bridge</span></span></button>
+<button class="hotspot tip-left" type="button" style="left:28.889%;top:25.227%" aria-label="Dance 7, 12:39, The Hidden Gem, Sowerby Bridge"><span class="tip"><span class="dance">Dance 7</span> <span class="meta">12:39</span><br><b>The Hidden Gem</b><br><span class="meta">Sowerby Bridge</span></span></button>
+<button class="hotspot" type="button" style="left:32.377%;top:23.955%" aria-label="Dance 8, 13:11, The Turks Head, Sowerby Bridge"><span class="tip"><span class="dance">Dance 8</span> <span class="meta">13:11</span><br><b>The Turks Head</b><br><span class="meta">Sowerby Bridge</span></span></button>
+<button class="hotspot" type="button" style="left:37.171%;top:26.500%" aria-label="Dance 9, 13:55, Hollins Mill, Sowerby Bridge"><span class="tip"><span class="dance">Dance 9</span> <span class="meta">13:55</span><br><b>Hollins Mill</b><br><span class="meta">Sowerby Bridge</span></span></button>
+<button class="hotspot" type="button" style="left:38.261%;top:25.227%" aria-label="Dance 10, 14:05, Loose Goose, Sowerby Bridge"><span class="tip"><span class="dance">Dance 10</span> <span class="meta">14:05</span><br><b>Loose Goose</b><br><span class="meta">Sowerby Bridge</span></span></button>
+<button class="hotspot" type="button" style="left:41.312%;top:23.955%" aria-label="Dance 11, 14:33, Royal Oak, Sowerby Bridge"><span class="tip"><span class="dance">Dance 11</span> <span class="meta">14:33</span><br><b>Royal Oak</b><br><span class="meta">Sowerby Bridge</span></span></button>
+<button class="hotspot" type="button" style="left:43.383%;top:26.500%" aria-label="Dance 12, 14:52, The Hog&#x27;s Head, Sowerby Bridge"><span class="tip"><span class="dance">Dance 12</span> <span class="meta">14:52</span><br><b>The Hog&#x27;s Head</b><br><span class="meta">Sowerby Bridge</span></span></button>
+<button class="hotspot" type="button" style="left:50.139%;top:41.136%" aria-label="Dance 13, 15:54, Nightjar, Hebden Bridge"><span class="tip"><span class="dance">Dance 13</span> <span class="meta">15:54</span><br><b>Nightjar</b><br><span class="meta">Hebden Bridge</span></span></button>
+<button class="hotspot" type="button" style="left:52.755%;top:39.864%" aria-label="Dance 14, 16:18, Mamil, Hebden Bridge"><span class="tip"><span class="dance">Dance 14</span> <span class="meta">16:18</span><br><b>Mamil</b><br><span class="meta">Hebden Bridge</span></span></button>
+<button class="hotspot" type="button" style="left:54.062%;top:42.409%" aria-label="Dance 15, 16:30, La Vida, Hebden Bridge"><span class="tip"><span class="dance">Dance 15</span> <span class="meta">16:30</span><br><b>La Vida</b><br><span class="meta">Hebden Bridge</span></span></button>
+<button class="hotspot" type="button" style="left:57.005%;top:41.136%" aria-label="Dance 16, 16:57, Trades Club, Hebden Bridge"><span class="tip"><span class="dance">Dance 16</span> <span class="meta">16:57</span><br><b>Trades Club</b><br><span class="meta">Hebden Bridge</span></span></button>
+<button class="hotspot" type="button" style="left:58.313%;top:39.864%" aria-label="Dance 17, 17:09, Drink, Hebden Bridge"><span class="tip"><span class="dance">Dance 17</span> <span class="meta">17:09</span><br><b>Drink</b><br><span class="meta">Hebden Bridge</span></span></button>
+<button class="hotspot" type="button" style="left:66.486%;top:42.409%" aria-label="Dance 18, 18:24, Fox &amp; Goose, Hebden Bridge"><span class="tip"><span class="dance">Dance 18</span> <span class="meta">18:24</span><br><b>Fox &amp; Goose</b><br><span class="meta">Hebden Bridge</span></span></button>
+<button class="hotspot" type="button" style="left:68.556%;top:41.136%" aria-label="Dance 19, 18:43, Old Gate, Hebden Bridge"><span class="tip"><span class="dance">Dance 19</span> <span class="meta">18:43</span><br><b>Old Gate</b><br><span class="meta">Hebden Bridge</span></span></button>
+<button class="hotspot tip-right" type="button" style="left:71.389%;top:39.864%" aria-label="Dance 20, 19:09, The Hidden Hebden, Hebden Bridge"><span class="tip"><span class="dance">Dance 20</span> <span class="meta">19:09</span><br><b>The Hidden Hebden</b><br><span class="meta">Hebden Bridge</span></span></button>
+<button class="hotspot tip-right" type="button" style="left:72.370%;top:42.409%" aria-label="Dance 21, 19:18, The White Swan, Hebden Bridge"><span class="tip"><span class="dance">Dance 21</span> <span class="meta">19:18</span><br><b>The White Swan</b><br><span class="meta">Hebden Bridge</span></span></button>
+<button class="hotspot tip-right" type="button" style="left:75.530%;top:41.136%" aria-label="Dance 22, 19:47, Shoulder of Mutton, Hebden Bridge"><span class="tip"><span class="dance">Dance 22</span> <span class="meta">19:47</span><br><b>Shoulder of Mutton</b><br><span class="meta">Hebden Bridge</span></span></button>
+<button class="hotspot tip-right" type="button" style="left:80.325%;top:39.864%" aria-label="Dance 23, 20:31, The Mill, Hebden Bridge"><span class="tip"><span class="dance">Dance 23</span> <span class="meta">20:31</span><br><b>The Mill</b><br><span class="meta">Hebden Bridge</span></span></button>
+<button class="hotspot tip-right" type="button" style="left:82.178%;top:42.409%" aria-label="Dance 24, 20:48, Nelson&#x27;s Wine Bar, Hebden Bridge"><span class="tip"><span class="dance">Dance 24</span> <span class="meta">20:48</span><br><b>Nelson&#x27;s Wine Bar</b><br><span class="meta">Hebden Bridge</span></span></button>
+<button class="hotspot tip-right" type="button" style="left:86.210%;top:41.136%" aria-label="Dance 25, 21:25, Hebden Bridge Sports and Social Club, Hebden Bridge"><span class="tip"><span class="dance">Dance 25</span> <span class="meta">21:25</span><br><b>Hebden Bridge Sports and Social Club</b><br><span class="meta">Hebden Bridge</span></span></button>
+<button class="hotspot tip-right" type="button" style="left:87.627%;top:39.864%" aria-label="Dance 26, 21:38, The Albert, Hebden Bridge"><span class="tip"><span class="dance">Dance 26</span> <span class="meta">21:38</span><br><b>The Albert</b><br><span class="meta">Hebden Bridge</span></span></button>
+<button class="hotspot tip-right" type="button" style="left:91.332%;top:42.409%" aria-label="Dance 27, 22:12, The Winchester, Hebden Bridge"><span class="tip"><span class="dance">Dance 27</span> <span class="meta">22:12</span><br><b>The Winchester</b><br><span class="meta">Hebden Bridge</span></span></button>
+<button class="hotspot tip-right" type="button" style="left:94.819%;top:41.136%" aria-label="Dance 28, 22:44, Vocation, Hebden Bridge"><span class="tip"><span class="dance">Dance 28</span> <span class="meta">22:44</span><br><b>Vocation</b><br><span class="meta">Hebden Bridge</span></span></button>
+<button class="hotspot travel" type="button" style="left:46.543%;top:19.091%" aria-label="TRAIN → HEBDEN, 15:21"><span class="tip"><b>TRAIN → HEBDEN</b><span class="meta">15:21 · travel</span></span></button>
+<button class="hotspot tip-left" type="button" style="left:22.242%;top:60.795%" aria-label="Dance 29, 11:38, The Flying Horse, Rochdale"><span class="tip"><span class="dance">Dance 29</span> <span class="meta">11:38</span><br><b>The Flying Horse</b><br><span class="meta">Rochdale</span></span></button>
+<button class="hotspot tip-left" type="button" style="left:23.441%;top:59.795%" aria-label="Dance 30, 11:49, Hogarth&#x27;s, Rochdale"><span class="tip"><span class="dance">Dance 30</span> <span class="meta">11:49</span><br><b>Hogarth&#x27;s</b><br><span class="meta">Rochdale</span></span></button>
+<button class="hotspot tip-left" type="button" style="left:27.582%;top:61.795%" aria-label="Dance 31, 12:27, Lucky Duck, Rochdale"><span class="tip"><span class="dance">Dance 31</span> <span class="meta">12:27</span><br><b>Lucky Duck</b><br><span class="meta">Rochdale</span></span></button>
+<button class="hotspot" type="button" style="left:30.088%;top:60.795%" aria-label="Dance 32, 12:50, The Baum, Rochdale"><span class="tip"><span class="dance">Dance 32</span> <span class="meta">12:50</span><br><b>The Baum</b><br><span class="meta">Rochdale</span></span></button>
+<button class="hotspot" type="button" style="left:33.793%;top:59.795%" aria-label="Dance 33, 13:24, The White Lion, Rochdale"><span class="tip"><span class="dance">Dance 33</span> <span class="meta">13:24</span><br><b>The White Lion</b><br><span class="meta">Rochdale</span></span></button>
+<button class="hotspot" type="button" style="left:38.588%;top:61.795%" aria-label="Dance 34, 14:08, The Pint Pot, Rochdale"><span class="tip"><span class="dance">Dance 34</span> <span class="meta">14:08</span><br><b>The Pint Pot</b><br><span class="meta">Rochdale</span></span></button>
+<button class="hotspot" type="button" style="left:41.312%;top:60.795%" aria-label="Dance 35, 14:33, Vicolo Del Vino, Rochdale"><span class="tip"><span class="dance">Dance 35</span> <span class="meta">14:33</span><br><b>Vicolo Del Vino</b><br><span class="meta">Rochdale</span></span></button>
+<button class="hotspot" type="button" style="left:43.056%;top:59.795%" aria-label="Dance 36, 14:49, Our Gracie&#x27;s, Rochdale"><span class="tip"><span class="dance">Dance 36</span> <span class="meta">14:49</span><br><b>Our Gracie&#x27;s</b><br><span class="meta">Rochdale</span></span></button>
+<button class="hotspot" type="button" style="left:44.364%;top:61.795%" aria-label="Dance 37, 15:01, Moody Blue, Rochdale"><span class="tip"><span class="dance">Dance 37</span> <span class="meta">15:01</span><br><b>Moody Blue</b><br><span class="meta">Rochdale</span></span></button>
+<button class="hotspot" type="button" style="left:49.268%;top:68.750%" aria-label="Dance 38, 15:46, Bird in the Hand, Newhey"><span class="tip"><span class="dance">Dance 38</span> <span class="meta">15:46</span><br><b>Bird in the Hand</b><br><span class="meta">Newhey</span></span></button>
+<button class="hotspot" type="button" style="left:51.774%;top:67.750%" aria-label="Dance 39, 16:09, The Lodge Sports Bar, Newhey"><span class="tip"><span class="dance">Dance 39</span> <span class="meta">16:09</span><br><b>The Lodge Sports Bar</b><br><span class="meta">Newhey</span></span></button>
+<button class="hotspot" type="button" style="left:55.043%;top:69.750%" aria-label="Dance 40, 16:39, The Free Trade Tavern, Newhey"><span class="tip"><span class="dance">Dance 40</span> <span class="meta">16:39</span><br><b>The Free Trade Tavern</b><br><span class="meta">Newhey</span></span></button>
+<button class="hotspot" type="button" style="left:58.966%;top:76.705%" aria-label="Dance 41, 17:15, The Slip Inn, Milnrow"><span class="tip"><span class="dance">Dance 41</span> <span class="meta">17:15</span><br><b>The Slip Inn</b><br><span class="meta">Milnrow</span></span></button>
+<button class="hotspot" type="button" style="left:61.582%;top:75.705%" aria-label="Dance 42, 17:39, The Waggon, Milnrow"><span class="tip"><span class="dance">Dance 42</span> <span class="meta">17:39</span><br><b>The Waggon</b><br><span class="meta">Milnrow</span></span></button>
+<button class="hotspot" type="button" style="left:65.069%;top:77.705%" aria-label="Dance 43, 18:11, Moonspinners, Milnrow"><span class="tip"><span class="dance">Dance 43</span> <span class="meta">18:11</span><br><b>Moonspinners</b><br><span class="meta">Milnrow</span></span></button>
+<button class="hotspot" type="button" style="left:67.575%;top:76.705%" aria-label="Dance 44, 18:34, The Bobbin, Milnrow"><span class="tip"><span class="dance">Dance 44</span> <span class="meta">18:34</span><br><b>The Bobbin</b><br><span class="meta">Milnrow</span></span></button>
+<button class="hotspot" type="button" style="left:69.537%;top:75.705%" aria-label="Dance 45, 18:52, The Gallows, Milnrow"><span class="tip"><span class="dance">Dance 45</span> <span class="meta">18:52</span><br><b>The Gallows</b><br><span class="meta">Milnrow</span></span></button>
+<button class="hotspot tip-right" type="button" style="left:74.441%;top:85.659%" aria-label="Dance 46, 19:37, The Queens, Littleborough"><span class="tip"><span class="dance">Dance 46</span> <span class="meta">19:37</span><br><b>The Queens</b><br><span class="meta">Littleborough</span></span></button>
+<button class="hotspot tip-right" type="button" style="left:77.056%;top:84.659%" aria-label="Dance 47, 20:01, Falcon Inn, Littleborough"><span class="tip"><span class="dance">Dance 47</span> <span class="meta">20:01</span><br><b>Falcon Inn</b><br><span class="meta">Littleborough</span></span></button>
+<button class="hotspot tip-right" type="button" style="left:81.306%;top:83.659%" aria-label="Dance 48, 20:40, The Red Lion, Littleborough"><span class="tip"><span class="dance">Dance 48</span> <span class="meta">20:40</span><br><b>The Red Lion</b><br><span class="meta">Littleborough</span></span></button>
+<button class="hotspot travel" type="button" style="left:45.889%;top:58.636%" aria-label="TRAM → NEWHEY, 15:15"><span class="tip"><b>TRAM → NEWHEY</b><span class="meta">15:15 · travel</span></span></button></div></div><div class="cap">Each numbered dot is one dance. Hover or tap a dot for the pub name. Towns are lanes; the faint line shows the order. Train and tram legs are marked. Full list in the <a href="#pub-archive">pub archive</a>.</div></div>
 <div class="insights">
   <div class="ins"><div class="t">Friday was the marathon</div><p>28 dances over <b>12 hours</b> (10:44 to 22:44), split into <b>12 in Sowerby Bridge</b> (10:44–14:52) and <b>16 in Hebden Bridge</b> (15:54–22:44), bridged by the 15:21 train.</p></div>
   <div class="ins cyan"><div class="t">Saturday was four hops</div><p><b>Rochdale 9 → Newhey 3 → Milnrow 5 → Littleborough 3</b>, with a tram at 15:15 and the last dance at 20:40. Shorter, but more moving parts.</p></div>
@@ -98,7 +244,7 @@
   <div class="ins violet"><div class="t">Two travel legs, about 30 minutes each</div><p>The train (Fri 15:21) and tram (Sat 15:15) both land in the middle of the afternoon — the natural hinge of each day.</p></div>
 </div>
 
-<h2><span class="num">02</span>Pace, breaks and handovers</h2>
+<h2 id="pace"><span class="num">02</span>Pace, breaks and handovers</h2>
 <p class="sub">The cumulative-dance chart makes the rhythm obvious: a steady climb, one real sit-down break on Friday, and a slower Saturday that never quite catches up (as did their heads).</p>
 <div class="grid2">
   <div class="chart"><img src="02_pace.png" alt="Cumulative dances versus clock time for Friday and Saturday"><div class="cap">Cumulative dances against the clock. Steeper line = faster dancing.</div></div>
@@ -107,32 +253,12 @@
 <ul class="tight">
   <li><b>Average handover was 27 minutes</b> (46 gaps), and the overall median was <b>25.5 minutes</b>. Friday mean 26.7 / median 26; Saturday mean 28.5 / median 25.</li>
   <li><b>Fastest turnarounds were 9 minutes</b>, twice on Friday: The Moorings → Temujin and The Hidden Hebden → The White Swan. A third 10-minute sprint came at Hollins Mill → Loose Goose.</li>
-  <li><b>The 75-minute break at Drink</b> (17:09 → 18:24) is the clear outlier — this can be credited to various takeaways across Hedben. The next longest Friday gap is 62 minutes, which includes the train to Hebden.</li>
+  <li><b>The 75-minute break at Drink</b> (17:09 → 18:24) is the clear outlier — this can be credited to various takeaways across Hebden. The next longest Friday gap is 62 minutes, which includes the train to Hebden.</li>
   <li>Saturday's longest gaps were both <b>45 minutes</b>: Moody Blue → Bird in Hand (the tram to Newhey) and The Gallows → The Queens (the move to Littleborough).</li>
   <li>Friday peaked at 3 dances in each of 11:00, 14:00, 16:00 and 19:00; Saturday was flatter, with 14:00 and 18:00 the only 3-dance hours.</li>
 </ul>
 
-<h2><span class="num">03</span>The dancers</h2>
-<p class="sub">Sixteen people appear somewhere in the data, but the workload is not evenly shared. The birthday boy Tom — was present in every one of the 48 dances in some role.</p>
-<div class="chart"><img src="03_workload.png" alt="Stacked bar chart of appearances by role for each dancer"><div class="cap">Total appearances, split by positions, Tommy, Betty and music. F/S dots show which day(s) each person appeared.</div></div>
-<div class="insights">
-  <div class="ins"><div class="t">Tom: 48/48</div><p><b>Tom</b> covered 16 positions, 9 Tommy slots and 23 music slots.</p></div>
-  <div class="ins teal"><div class="t">Joe and Ben carried the positions</div><p><b>Joe</b> did 34 position dances and <b>Ben</b> 32. Between them they covered an end in 66 of the 96 end-position slots.</p></div>
-  <div class="ins yellow"><div class="t">John was the support engine</div><p><b>33 appearances</b>: 13 in position 3, 18 as Tommy and the weekend's only 2 Bettys. He was the busiest person after Vic and Tom.</p></div>
-  <div class="ins violet"><div class="t">Day trippers</div><p><b>Simon</b> appeared only on Friday. <b>Oli, Michael, Ed and Richard</b> appeared only on Saturday. Eleven dancers did both days.</p></div>
-</div>
-
-<h2><span class="num">04</span>The five positions</h2>
-<div class="chart"><img src="04_positions.png" alt="Heatmap of each dancer's position usage"><div class="cap">Cell numbers are appearances; the percentage is that dancer's share of their position work. Right-hand dots show which of the five spots they used.</div></div>
-<ul class="tight">
-  <li><b>7 of the 13 position dancers used only one spot.</b> David, Iona and Michael were exclusively position 4; Matt and John exclusively position 3; Oli exclusively position 2; Ed exclusively position 5.</li>
-  <li><b>Ben is the purest end specialist</b>: 31 of his 32 position dances were position 1 (97%). <b>Joe</b> split between the two ends (16 at position 1, 18 at position 5).</li>
-  <li><b>Paul and Jeff were the most versatile</b>, covering three positions each. Paul: 1, 2 and 5; Jeff: 2, 3 and 4.</li>
-  <li>Positions 2, 3 and 4 are dominated by a fixed group — which is why the same pairings recur all weekend.</li>
-</ul>
-<div class="chart" style="margin-top:18px"><img src="08_codancers.png" alt="Most frequent dance partnerships"><div class="cap">The most frequent five-person line-ups. Joe + Nicol shared 21 of 48 dances, the strongest partnership of the weekend.</div></div>
-
-<h2><span class="num">05</span>The places</h2>
+<h2 id="places"><span class="num">03</span>The places</h2>
 <p class="sub">Hebden Bridge had the most dances but the slowest rhythm. Newhey was the sprint: three dances in 53 minutes.</p>
 <div class="chart"><img src="05_locations.png" alt="Donut of dances by town and pace by town"><div class="cap">Share of all 48 dances by town (left) and dances per hour within each town's first-to-last dance window (right).</div></div>
 <div class="insights">
@@ -142,7 +268,46 @@
   <div class="ins violet"><div class="t">Milnrow: a tidy five</div><p>Five dances in 1h 37m (3.09/hour) — the second-fastest pace after Newhey.</p></div>
 </div>
 
-<h2><span class="num">06</span>Tommy, Betty and the band</h2>
+<h2 id="pub-archive"><span class="num">04</span>The pub archive &amp; map</h2>
+<p class="sub">Every pub we danced in, plotted from the coordinates in the CSV and grouped by town in the order we landed. The dance numbers match the timeline dots above.</p>
+<div class="map-shell">
+  <div class="map-head">
+    <div>
+      <div class="map-title">All 48 pubs, plotted</div>
+      <p class="map-sub">Click a town to zoom; click a pin for the dance details. Clusters expand as you zoom in.</p>
+    </div>
+    <div class="map-key">
+      <span><i class="key-line"></i>Friday route</span>
+      <span><i class="key-line sat"></i>Saturday route</span>
+    </div>
+  </div>
+  <div class="map-jumps" id="map-jumps" aria-label="Zoom to town"></div>
+  <div id="pub-map" class="pub-map" role="region" aria-label="Interactive map of all 48 pubs"><div class="map-fallback">The interactive map loads from OpenStreetMap. The pub archive below lists every venue.</div></div>
+  <p class="map-note">Pins use the <b>Latitude</b> and <b>Longitude</b> columns; travel legs are not plotted. Base map: <b>OpenFreeMap Dark</b>, data © OpenStreetMap contributors.</p>
+</div>
+<div class="pub-grid"><div class="pub-town" style="--town:#FF6B6B"><h3><span class="dot"></span>Sowerby Bridge<span class="count">12 pubs</span></h3><div class="day">Friday · 10:44–14:52</div><ol class="pub-list"><li><span class="n">1</span><span class="time">10:44</span><span class="name">William the Fourth</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=William+the+Fourth%2C+Sowerby+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for William the Fourth, Sowerby Bridge">map</a></li><li><span class="n">2</span><span class="time">10:56</span><span class="name">Salts Bar</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Salts+Bar%2C+Sowerby+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Salts Bar, Sowerby Bridge">map</a></li><li><span class="n">3</span><span class="time">11:12</span><span class="name">The Moorings</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+Moorings%2C+Sowerby+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The Moorings, Sowerby Bridge">map</a></li><li><span class="n">4</span><span class="time">11:21</span><span class="name">Temujin</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Temujin%2C+Sowerby+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Temujin, Sowerby Bridge">map</a></li><li><span class="n">5</span><span class="time">11:55</span><span class="name">The Commercial Inn</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+Commercial+Inn%2C+Sowerby+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The Commercial Inn, Sowerby Bridge">map</a></li><li><span class="n">6</span><span class="time">12:21</span><span class="name">The Navigation</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+Navigation%2C+Sowerby+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The Navigation, Sowerby Bridge">map</a></li><li><span class="n">7</span><span class="time">12:39</span><span class="name">The Hidden Gem</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+Hidden+Gem%2C+Sowerby+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The Hidden Gem, Sowerby Bridge">map</a></li><li><span class="n">8</span><span class="time">13:11</span><span class="name">The Turks Head</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+Turks+Head%2C+Sowerby+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The Turks Head, Sowerby Bridge">map</a></li><li><span class="n">9</span><span class="time">13:55</span><span class="name">Hollins Mill</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Hollins+Mill%2C+Sowerby+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Hollins Mill, Sowerby Bridge">map</a></li><li><span class="n">10</span><span class="time">14:05</span><span class="name">Loose Goose</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Loose+Goose%2C+Sowerby+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Loose Goose, Sowerby Bridge">map</a></li><li><span class="n">11</span><span class="time">14:33</span><span class="name">Royal Oak</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Royal+Oak%2C+Sowerby+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Royal Oak, Sowerby Bridge">map</a></li><li><span class="n">12</span><span class="time">14:52</span><span class="name">The Hog&#x27;s Head</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+Hog%27s+Head%2C+Sowerby+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The Hog&#x27;s Head, Sowerby Bridge">map</a></li></ol></div><div class="pub-town" style="--town:#4ECDC4"><h3><span class="dot"></span>Hebden Bridge<span class="count">16 pubs</span></h3><div class="day">Friday · 15:54–22:44</div><ol class="pub-list"><li><span class="n">13</span><span class="time">15:54</span><span class="name">Nightjar</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Nightjar%2C+Hebden+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Nightjar, Hebden Bridge">map</a></li><li><span class="n">14</span><span class="time">16:18</span><span class="name">Mamil</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Mamil%2C+Hebden+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Mamil, Hebden Bridge">map</a></li><li><span class="n">15</span><span class="time">16:30</span><span class="name">La Vida</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=La+Vida%2C+Hebden+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for La Vida, Hebden Bridge">map</a></li><li><span class="n">16</span><span class="time">16:57</span><span class="name">Trades Club</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Trades+Club%2C+Hebden+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Trades Club, Hebden Bridge">map</a></li><li><span class="n">17</span><span class="time">17:09</span><span class="name">Drink</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Drink%2C+Hebden+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Drink, Hebden Bridge">map</a></li><li><span class="n">18</span><span class="time">18:24</span><span class="name">Fox &amp; Goose</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Fox+%26+Goose%2C+Hebden+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Fox &amp; Goose, Hebden Bridge">map</a></li><li><span class="n">19</span><span class="time">18:43</span><span class="name">Old Gate</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Old+Gate%2C+Hebden+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Old Gate, Hebden Bridge">map</a></li><li><span class="n">20</span><span class="time">19:09</span><span class="name">The Hidden Hebden</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+Hidden+Hebden%2C+Hebden+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The Hidden Hebden, Hebden Bridge">map</a></li><li><span class="n">21</span><span class="time">19:18</span><span class="name">The White Swan</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+White+Swan%2C+Hebden+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The White Swan, Hebden Bridge">map</a></li><li><span class="n">22</span><span class="time">19:47</span><span class="name">Shoulder of Mutton</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Shoulder+of+Mutton%2C+Hebden+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Shoulder of Mutton, Hebden Bridge">map</a></li><li><span class="n">23</span><span class="time">20:31</span><span class="name">The Mill</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+Mill%2C+Hebden+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The Mill, Hebden Bridge">map</a></li><li><span class="n">24</span><span class="time">20:48</span><span class="name">Nelson&#x27;s Wine Bar</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Nelson%27s+Wine+Bar%2C+Hebden+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Nelson&#x27;s Wine Bar, Hebden Bridge">map</a></li><li><span class="n">25</span><span class="time">21:25</span><span class="name">Hebden Bridge Sports and Social Club</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Hebden+Bridge+Sports+and+Social+Club%2C+Hebden+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Hebden Bridge Sports and Social Club, Hebden Bridge">map</a></li><li><span class="n">26</span><span class="time">21:38</span><span class="name">The Albert</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+Albert%2C+Hebden+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The Albert, Hebden Bridge">map</a></li><li><span class="n">27</span><span class="time">22:12</span><span class="name">The Winchester</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+Winchester%2C+Hebden+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The Winchester, Hebden Bridge">map</a></li><li><span class="n">28</span><span class="time">22:44</span><span class="name">Vocation</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Vocation%2C+Hebden+Bridge%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Vocation, Hebden Bridge">map</a></li></ol></div><div class="pub-town" style="--town:#FFD93D"><h3><span class="dot"></span>Rochdale<span class="count">9 pubs</span></h3><div class="day">Saturday · 11:38–15:01</div><ol class="pub-list"><li><span class="n">29</span><span class="time">11:38</span><span class="name">The Flying Horse</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+Flying+Horse%2C+Rochdale%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The Flying Horse, Rochdale">map</a></li><li><span class="n">30</span><span class="time">11:49</span><span class="name">Hogarth&#x27;s</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Hogarth%27s%2C+Rochdale%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Hogarth&#x27;s, Rochdale">map</a></li><li><span class="n">31</span><span class="time">12:27</span><span class="name">Lucky Duck</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Lucky+Duck%2C+Rochdale%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Lucky Duck, Rochdale">map</a></li><li><span class="n">32</span><span class="time">12:50</span><span class="name">The Baum</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+Baum%2C+Rochdale%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The Baum, Rochdale">map</a></li><li><span class="n">33</span><span class="time">13:24</span><span class="name">The White Lion</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+White+Lion%2C+Rochdale%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The White Lion, Rochdale">map</a></li><li><span class="n">34</span><span class="time">14:08</span><span class="name">The Pint Pot</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+Pint+Pot%2C+Rochdale%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The Pint Pot, Rochdale">map</a></li><li><span class="n">35</span><span class="time">14:33</span><span class="name">Vicolo Del Vino</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Vicolo+Del+Vino%2C+Rochdale%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Vicolo Del Vino, Rochdale">map</a></li><li><span class="n">36</span><span class="time">14:49</span><span class="name">Our Gracie&#x27;s</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Our+Gracie%27s%2C+Rochdale%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Our Gracie&#x27;s, Rochdale">map</a></li><li><span class="n">37</span><span class="time">15:01</span><span class="name">Moody Blue</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Moody+Blue%2C+Rochdale%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Moody Blue, Rochdale">map</a></li></ol></div><div class="pub-town" style="--town:#A78BFA"><h3><span class="dot"></span>Newhey<span class="count">3 pubs</span></h3><div class="day">Saturday · 15:46–16:39</div><ol class="pub-list"><li><span class="n">38</span><span class="time">15:46</span><span class="name">Bird in the Hand</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Bird+in+the+Hand%2C+Newhey%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Bird in the Hand, Newhey">map</a></li><li><span class="n">39</span><span class="time">16:09</span><span class="name">The Lodge Sports Bar</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+Lodge+Sports+Bar%2C+Newhey%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The Lodge Sports Bar, Newhey">map</a></li><li><span class="n">40</span><span class="time">16:39</span><span class="name">The Free Trade Tavern</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+Free+Trade+Tavern%2C+Newhey%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The Free Trade Tavern, Newhey">map</a></li></ol></div><div class="pub-town" style="--town:#FF9F43"><h3><span class="dot"></span>Milnrow<span class="count">5 pubs</span></h3><div class="day">Saturday · 17:15–18:52</div><ol class="pub-list"><li><span class="n">41</span><span class="time">17:15</span><span class="name">The Slip Inn</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+Slip+Inn%2C+Milnrow%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The Slip Inn, Milnrow">map</a></li><li><span class="n">42</span><span class="time">17:39</span><span class="name">The Waggon</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+Waggon%2C+Milnrow%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The Waggon, Milnrow">map</a></li><li><span class="n">43</span><span class="time">18:11</span><span class="name">Moonspinners</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Moonspinners%2C+Milnrow%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Moonspinners, Milnrow">map</a></li><li><span class="n">44</span><span class="time">18:34</span><span class="name">The Bobbin</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+Bobbin%2C+Milnrow%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The Bobbin, Milnrow">map</a></li><li><span class="n">45</span><span class="time">18:52</span><span class="name">The Gallows</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+Gallows%2C+Milnrow%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The Gallows, Milnrow">map</a></li></ol></div><div class="pub-town" style="--town:#45B7D1"><h3><span class="dot"></span>Littleborough<span class="count">3 pubs</span></h3><div class="day">Saturday · 19:37–20:40</div><ol class="pub-list"><li><span class="n">46</span><span class="time">19:37</span><span class="name">The Queens</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+Queens%2C+Littleborough%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The Queens, Littleborough">map</a></li><li><span class="n">47</span><span class="time">20:01</span><span class="name">Falcon Inn</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=Falcon+Inn%2C+Littleborough%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for Falcon Inn, Littleborough">map</a></li><li><span class="n">48</span><span class="time">20:40</span><span class="name">The Red Lion</span><a class="map" href="https://www.google.com/maps/search/?api=1&query=The+Red+Lion%2C+Littleborough%2C+UK" target="_blank" rel="noopener noreferrer" aria-label="Open map search for The Red Lion, Littleborough">map</a></li></ol></div></div><p class="archive-note">Travel legs: <b>Train to Hebden</b> 15:21 · <b>Tram to Newhey</b> 15:15. Travel rows are not pubs and are excluded from the 48.</p><p class="archive-note">Pins use the <b>Latitude</b> and <b>Longitude</b> columns in the CSV. Each pub also links to a Google Maps search. Travel legs are not plotted.</p>
+
+<h2 id="dancers"><span class="num">05</span>The dancers</h2>
+<p class="sub">Sixteen people appear somewhere in the data, but the workload is not evenly shared. The birthday boy Tom — was present in every one of the 48 dances in some role.</p>
+<div class="chart"><img src="03_workload.png" alt="Stacked bar chart of appearances by role for each dancer"><div class="cap">Total appearances, split by positions, Tommy, Betty and music. F/S dots show which day(s) each person appeared.</div></div>
+<div class="insights">
+  <div class="ins"><div class="t">Tom: 48/48</div><p><b>Tom</b> covered 16 positions, 9 Tommy slots and 23 music slots.</p></div>
+  <div class="ins teal"><div class="t">Joe and Ben carried the positions</div><p><b>Joe</b> did 34 position dances and <b>Ben</b> 32. Between them they covered an end in 66 of the 96 end-position slots.</p></div>
+  <div class="ins yellow"><div class="t">John was the support engine</div><p><b>33 appearances</b>: 13 in position 3, 18 as Tommy and the weekend's only 2 Bettys. He was the busiest person after Vic and Tom.</p></div>
+  <div class="ins violet"><div class="t">Day trippers</div><p><b>Simon</b> appeared only on Friday. <b>Oli, Michael, Ed and Richard</b> appeared only on Saturday. Eleven dancers did both days.</p></div>
+</div>
+
+<h2 id="positions"><span class="num">06</span>The five positions</h2>
+<div class="chart"><img src="04_positions.png" alt="Heatmap of each dancer's position usage"><div class="cap">Cell numbers are appearances; the percentage is that dancer's share of their position work. Right-hand dots show which of the five spots they used.</div></div>
+<ul class="tight">
+  <li><b>7 of the 13 position dancers used only one spot.</b> David, Iona and Michael were exclusively position 4; Matt and John exclusively position 3; Oli exclusively position 2; Ed exclusively position 5.</li>
+  <li><b>Ben is the purest end specialist</b>: 31 of his 32 position dances were position 1 (97%). <b>Joe</b> split between the two ends (16 at position 1, 18 at position 5).</li>
+  <li><b>Paul and Jeff were the most versatile</b>, covering three positions each. Paul: 1, 2 and 5; Jeff: 2, 3 and 4.</li>
+  <li>Positions 2, 3 and 4 are dominated by a fixed group — which is why the same pairings recur all weekend.</li>
+</ul>
+<div class="chart" style="margin-top:18px"><img src="08_codancers.png" alt="Most frequent dance partnerships"><div class="cap">The most frequent five-person line-ups. Joe + Nicol shared 21 of 48 dances, the strongest partnership of the weekend.</div></div>
+
+<h2 id="roles"><span class="num">07</span>Tommy, Betty and the band</h2>
 <p class="sub">The support roles were as organised as the five positions. Tommy duty changed hands between the days, Betty barely appeared, and the music was effectively one person with a very reliable deputy.</p>
 <div class="chart"><img src="07_roles.png" alt="Tommy duty and music line-up by day"><div class="cap">Who took the Tommy on each day, and how the music was staffed. Betty (the second Tommy when the field is comma-separated) appeared twice.</div></div>
 <ul class="tight">
@@ -152,7 +317,7 @@
   <li><b>Vic carried the music in 47 of 48 dances</b>: 25 solo and 22 alongside Tom. The lone exception is dance 45 at The Gallows, where Vic took the Tommy and Tom played music — the weekend's only full role swap.</li>
 </ul>
 
-<h2><span class="num">07</span>By the numbers</h2>
+<h2 id="numbers"><span class="num">08</span>By the numbers</h2>
 <table>
   <thead><tr><th>Measure</th><th>Friday</th><th>Saturday</th><th>Weekend</th></tr></thead>
   <tbody>
@@ -174,7 +339,7 @@
   <b>The one-line version:</b> this is a remarkably disciplined weekend — fixed positions, a stable band, and a handover rhythm of roughly one dance every 27 minutes — punctuated by two travel hops and one proper 75-minute break. If only the drinking was as disciplined. There is no comment on the consistency on the quality of dancing throughout the weekend!
 </blockquote>
 
-<h2><span class="num">08</span>Method &amp; assumptions</h2>
+<h2 id="method"><span class="num">09</span>Method &amp; assumptions</h2>
 <p class="sub">The analysis uses the 50 rows of <code>40in40.csv</code>: 48 dance rows plus two travel rows. Travel rows (Train to Hebden, Tram to Newhey) are excluded from dance counts but included in the timeline and timing narrative.</p>
 <ul class="tight">
   <li><b>Positions 1–5</b> are treated as five separate dancer appearances. <b>Tommy</b> is counted separately from the five positions. <b>Music</b> is counted separately again.</li>
@@ -182,14 +347,256 @@
   <li>When the Music field is comma-separated (e.g. <code>Vic, Tom</code>), it is treated as two musicians. That is why Vic and Tom can each be present in every dance.</li>
   <li><b>Gap</b> = time between consecutive dance start times, so it includes the dance itself plus any changeover or travel. It is not the same as time spent in the pub.</li>
   <li><b>Pace</b> per town = dances divided by the first-to-last dance window in that town, not counting time after the final dance.</li>
+  <li><b>Map coordinates</b> come from CAMRA, OpenStreetMap and Nominatim. A few are building-level positions rather than exact door pins.</li>
   <li>Names are treated as unique people. If the Tom in the music column is a different Tom from the position-3 Tom, the “every dance” claim for Tom would not hold.</li>
 </ul>
 
 <footer>
-  Generated from <code>40in40.csv</code> · 48 dances · 16 dancers · 6 towns · 2 days.<br>
-  Charts rendered with Python + Pillow.
+  Generated from <code>40in40.csv</code> · charts rendered with Python + Pillow.<br>
+  Last built: 2026-11-10 00:18 UTC · <a href="https://github.com/wolff-956/40in40">source on GitHub</a>
 </footer>
 
 </div>
+<script src="https://unpkg.com/maplibre-gl@5.7.0/dist/maplibre-gl.js"></script>
+
+<script>
+(function () {
+  const mapEl = document.getElementById('pub-map');
+  if (!mapEl) return;
+  if (!window.maplibregl) {
+    mapEl.innerHTML = '<div class="map-fallback">The interactive map needs MapLibre from the CDN. The pub archive below lists every venue.</div>';
+    return;
+  }
+
+  const pubs = [{"dance": "1", "pub": "William the Fourth", "town": "Sowerby Bridge", "day": "Friday", "time": "10:44", "lat": 53.7099309, "lon": -1.9052311, "color": "#FF6B6B", "maps": "https://www.google.com/maps/search/?api=1&query=William+the+Fourth%2C+Sowerby+Bridge%2C+UK"}, {"dance": "2", "pub": "Salts Bar", "town": "Sowerby Bridge", "day": "Friday", "time": "10:56", "lat": 53.7096009, "lon": -1.9031319, "color": "#FF6B6B", "maps": "https://www.google.com/maps/search/?api=1&query=Salts+Bar%2C+Sowerby+Bridge%2C+UK"}, {"dance": "3", "pub": "The Moorings", "town": "Sowerby Bridge", "day": "Friday", "time": "11:12", "lat": 53.7097062, "lon": -1.9039181, "color": "#FF6B6B", "maps": "https://www.google.com/maps/search/?api=1&query=The+Moorings%2C+Sowerby+Bridge%2C+UK"}, {"dance": "4", "pub": "Temujin", "town": "Sowerby Bridge", "day": "Friday", "time": "11:21", "lat": 53.709777, "lon": -1.903993, "color": "#FF6B6B", "maps": "https://www.google.com/maps/search/?api=1&query=Temujin%2C+Sowerby+Bridge%2C+UK"}, {"dance": "5", "pub": "The Commercial Inn", "town": "Sowerby Bridge", "day": "Friday", "time": "11:55", "lat": 53.709579, "lon": -1.90788, "color": "#FF6B6B", "maps": "https://www.google.com/maps/search/?api=1&query=The+Commercial+Inn%2C+Sowerby+Bridge%2C+UK"}, {"dance": "6", "pub": "The Navigation", "town": "Sowerby Bridge", "day": "Friday", "time": "12:21", "lat": 53.710488, "lon": -1.900097, "color": "#FF6B6B", "maps": "https://www.google.com/maps/search/?api=1&query=The+Navigation%2C+Sowerby+Bridge%2C+UK"}, {"dance": "7", "pub": "The Hidden Gem", "town": "Sowerby Bridge", "day": "Friday", "time": "12:39", "lat": 53.71015, "lon": -1.90434, "color": "#FF6B6B", "maps": "https://www.google.com/maps/search/?api=1&query=The+Hidden+Gem%2C+Sowerby+Bridge%2C+UK"}, {"dance": "8", "pub": "The Turks Head", "town": "Sowerby Bridge", "day": "Friday", "time": "13:11", "lat": 53.708938, "lon": -1.908702, "color": "#FF6B6B", "maps": "https://www.google.com/maps/search/?api=1&query=The+Turks+Head%2C+Sowerby+Bridge%2C+UK"}, {"dance": "9", "pub": "Hollins Mill", "town": "Sowerby Bridge", "day": "Friday", "time": "13:55", "lat": 53.70888, "lon": -1.912768, "color": "#FF6B6B", "maps": "https://www.google.com/maps/search/?api=1&query=Hollins+Mill%2C+Sowerby+Bridge%2C+UK"}, {"dance": "10", "pub": "Loose Goose", "town": "Sowerby Bridge", "day": "Friday", "time": "14:05", "lat": 53.70705, "lon": -1.912983, "color": "#FF6B6B", "maps": "https://www.google.com/maps/search/?api=1&query=Loose+Goose%2C+Sowerby+Bridge%2C+UK"}, {"dance": "11", "pub": "Royal Oak", "town": "Sowerby Bridge", "day": "Friday", "time": "14:33", "lat": 53.706261, "lon": -1.916684, "color": "#FF6B6B", "maps": "https://www.google.com/maps/search/?api=1&query=Royal+Oak%2C+Sowerby+Bridge%2C+UK"}, {"dance": "12", "pub": "The Hog's Head", "town": "Sowerby Bridge", "day": "Friday", "time": "14:52", "lat": 53.709628, "lon": -1.905598, "color": "#FF6B6B", "maps": "https://www.google.com/maps/search/?api=1&query=The+Hog%27s+Head%2C+Sowerby+Bridge%2C+UK"}, {"dance": "13", "pub": "Nightjar", "town": "Hebden Bridge", "day": "Friday", "time": "15:54", "lat": 53.740697, "lon": -2.012588, "color": "#4ECDC4", "maps": "https://www.google.com/maps/search/?api=1&query=Nightjar%2C+Hebden+Bridge%2C+UK"}, {"dance": "14", "pub": "Mamil", "town": "Hebden Bridge", "day": "Friday", "time": "16:18", "lat": 53.74103, "lon": -2.013093, "color": "#4ECDC4", "maps": "https://www.google.com/maps/search/?api=1&query=Mamil%2C+Hebden+Bridge%2C+UK"}, {"dance": "15", "pub": "La Vida", "town": "Hebden Bridge", "day": "Friday", "time": "16:30", "lat": 53.7411027, "lon": -2.0140821, "color": "#4ECDC4", "maps": "https://www.google.com/maps/search/?api=1&query=La+Vida%2C+Hebden+Bridge%2C+UK"}, {"dance": "16", "pub": "Trades Club", "town": "Hebden Bridge", "day": "Friday", "time": "16:57", "lat": 53.740479, "lon": -2.014109, "color": "#4ECDC4", "maps": "https://www.google.com/maps/search/?api=1&query=Trades+Club%2C+Hebden+Bridge%2C+UK"}, {"dance": "17", "pub": "Drink", "town": "Hebden Bridge", "day": "Friday", "time": "17:09", "lat": 53.741303, "lon": -2.015369, "color": "#4ECDC4", "maps": "https://www.google.com/maps/search/?api=1&query=Drink%2C+Hebden+Bridge%2C+UK"}, {"dance": "18", "pub": "Fox & Goose", "town": "Hebden Bridge", "day": "Friday", "time": "18:24", "lat": 53.742059, "lon": -2.021392, "color": "#4ECDC4", "maps": "https://www.google.com/maps/search/?api=1&query=Fox+%26+Goose%2C+Hebden+Bridge%2C+UK"}, {"dance": "19", "pub": "Old Gate", "town": "Hebden Bridge", "day": "Friday", "time": "18:43", "lat": 53.741564, "lon": -2.014991, "color": "#4ECDC4", "maps": "https://www.google.com/maps/search/?api=1&query=Old+Gate%2C+Hebden+Bridge%2C+UK"}, {"dance": "20", "pub": "The Hidden Hebden", "town": "Hebden Bridge", "day": "Friday", "time": "19:09", "lat": 53.741406, "lon": -2.01321, "color": "#4ECDC4", "maps": "https://www.google.com/maps/search/?api=1&query=The+Hidden+Hebden%2C+Hebden+Bridge%2C+UK"}, {"dance": "21", "pub": "The White Swan", "town": "Hebden Bridge", "day": "Friday", "time": "19:18", "lat": 53.741813, "lon": -2.013004, "color": "#4ECDC4", "maps": "https://www.google.com/maps/search/?api=1&query=The+White+Swan%2C+Hebden+Bridge%2C+UK"}, {"dance": "22", "pub": "Shoulder of Mutton", "town": "Hebden Bridge", "day": "Friday", "time": "19:47", "lat": 53.742227, "lon": -2.012756, "color": "#4ECDC4", "maps": "https://www.google.com/maps/search/?api=1&query=Shoulder+of+Mutton%2C+Hebden+Bridge%2C+UK"}, {"dance": "23", "pub": "The Mill", "town": "Hebden Bridge", "day": "Friday", "time": "20:31", "lat": 53.7421249, "lon": -2.0122589, "color": "#4ECDC4", "maps": "https://www.google.com/maps/search/?api=1&query=The+Mill%2C+Hebden+Bridge%2C+UK"}, {"dance": "24", "pub": "Nelson's Wine Bar", "town": "Hebden Bridge", "day": "Friday", "time": "20:48", "lat": 53.741724, "lon": -2.012253, "color": "#4ECDC4", "maps": "https://www.google.com/maps/search/?api=1&query=Nelson%27s+Wine+Bar%2C+Hebden+Bridge%2C+UK"}, {"dance": "25", "pub": "Hebden Bridge Sports and Social Club", "town": "Hebden Bridge", "day": "Friday", "time": "21:25", "lat": 53.741157, "lon": -2.011379, "color": "#4ECDC4", "maps": "https://www.google.com/maps/search/?api=1&query=Hebden+Bridge+Sports+and+Social+Club%2C+Hebden+Bridge%2C+UK"}, {"dance": "26", "pub": "The Albert", "town": "Hebden Bridge", "day": "Friday", "time": "21:38", "lat": 53.740882, "lon": -2.011533, "color": "#4ECDC4", "maps": "https://www.google.com/maps/search/?api=1&query=The+Albert%2C+Hebden+Bridge%2C+UK"}, {"dance": "27", "pub": "The Winchester", "town": "Hebden Bridge", "day": "Friday", "time": "22:12", "lat": 53.7408569, "lon": -2.0112729, "color": "#4ECDC4", "maps": "https://www.google.com/maps/search/?api=1&query=The+Winchester%2C+Hebden+Bridge%2C+UK"}, {"dance": "28", "pub": "Vocation", "town": "Hebden Bridge", "day": "Friday", "time": "22:44", "lat": 53.740675, "lon": -2.011538, "color": "#4ECDC4", "maps": "https://www.google.com/maps/search/?api=1&query=Vocation%2C+Hebden+Bridge%2C+UK"}, {"dance": "29", "pub": "The Flying Horse", "town": "Rochdale", "day": "Saturday", "time": "11:38", "lat": 53.61568, "lon": -2.157468, "color": "#FFD93D", "maps": "https://www.google.com/maps/search/?api=1&query=The+Flying+Horse%2C+Rochdale%2C+UK"}, {"dance": "30", "pub": "Hogarth's", "town": "Rochdale", "day": "Saturday", "time": "11:49", "lat": 53.6173584, "lon": -2.157275, "color": "#FFD93D", "maps": "https://www.google.com/maps/search/?api=1&query=Hogarth%27s%2C+Rochdale%2C+UK"}, {"dance": "31", "pub": "Lucky Duck", "town": "Rochdale", "day": "Saturday", "time": "12:27", "lat": 53.6173326, "lon": -2.1569874, "color": "#FFD93D", "maps": "https://www.google.com/maps/search/?api=1&query=Lucky+Duck%2C+Rochdale%2C+UK"}, {"dance": "32", "pub": "The Baum", "town": "Rochdale", "day": "Saturday", "time": "12:50", "lat": 53.61874, "lon": -2.159433, "color": "#FFD93D", "maps": "https://www.google.com/maps/search/?api=1&query=The+Baum%2C+Rochdale%2C+UK"}, {"dance": "33", "pub": "The White Lion", "town": "Rochdale", "day": "Saturday", "time": "13:24", "lat": 53.619062, "lon": -2.155635, "color": "#FFD93D", "maps": "https://www.google.com/maps/search/?api=1&query=The+White+Lion%2C+Rochdale%2C+UK"}, {"dance": "34", "pub": "The Pint Pot", "town": "Rochdale", "day": "Saturday", "time": "14:08", "lat": 53.617578, "lon": -2.157715, "color": "#FFD93D", "maps": "https://www.google.com/maps/search/?api=1&query=The+Pint+Pot%2C+Rochdale%2C+UK"}, {"dance": "35", "pub": "Vicolo Del Vino", "town": "Rochdale", "day": "Saturday", "time": "14:33", "lat": 53.617572, "lon": -2.157318, "color": "#FFD93D", "maps": "https://www.google.com/maps/search/?api=1&query=Vicolo+Del+Vino%2C+Rochdale%2C+UK"}, {"dance": "36", "pub": "Our Gracie's", "town": "Rochdale", "day": "Saturday", "time": "14:49", "lat": 53.617291, "lon": -2.157619, "color": "#FFD93D", "maps": "https://www.google.com/maps/search/?api=1&query=Our+Gracie%27s%2C+Rochdale%2C+UK"}, {"dance": "37", "pub": "Moody Blue", "town": "Rochdale", "day": "Saturday", "time": "15:01", "lat": 53.616906, "lon": -2.156375, "color": "#FFD93D", "maps": "https://www.google.com/maps/search/?api=1&query=Moody+Blue%2C+Rochdale%2C+UK"}, {"dance": "38", "pub": "Bird in the Hand", "town": "Newhey", "day": "Saturday", "time": "15:46", "lat": 53.602745, "lon": -2.091449, "color": "#A78BFA", "maps": "https://www.google.com/maps/search/?api=1&query=Bird+in+the+Hand%2C+Newhey%2C+UK"}, {"dance": "39", "pub": "The Lodge Sports Bar", "town": "Newhey", "day": "Saturday", "time": "16:09", "lat": 53.6009079, "lon": -2.0964343, "color": "#A78BFA", "maps": "https://www.google.com/maps/search/?api=1&query=The+Lodge+Sports+Bar%2C+Newhey%2C+UK"}, {"dance": "40", "pub": "The Free Trade Tavern", "town": "Newhey", "day": "Saturday", "time": "16:39", "lat": 53.603112, "lon": -2.10342, "color": "#A78BFA", "maps": "https://www.google.com/maps/search/?api=1&query=The+Free+Trade+Tavern%2C+Newhey%2C+UK"}, {"dance": "41", "pub": "The Slip Inn", "town": "Milnrow", "day": "Saturday", "time": "17:15", "lat": 53.605755, "lon": -2.104296, "color": "#FF9F43", "maps": "https://www.google.com/maps/search/?api=1&query=The+Slip+Inn%2C+Milnrow%2C+UK"}, {"dance": "42", "pub": "The Waggon", "town": "Milnrow", "day": "Saturday", "time": "17:39", "lat": 53.607025, "lon": -2.104644, "color": "#FF9F43", "maps": "https://www.google.com/maps/search/?api=1&query=The+Waggon%2C+Milnrow%2C+UK"}, {"dance": "43", "pub": "Moonspinners", "town": "Milnrow", "day": "Saturday", "time": "18:11", "lat": 53.607083, "lon": -2.106077, "color": "#FF9F43", "maps": "https://www.google.com/maps/search/?api=1&query=Moonspinners%2C+Milnrow%2C+UK"}, {"dance": "44", "pub": "The Bobbin", "town": "Milnrow", "day": "Saturday", "time": "18:34", "lat": 53.611204, "lon": -2.11239, "color": "#FF9F43", "maps": "https://www.google.com/maps/search/?api=1&query=The+Bobbin%2C+Milnrow%2C+UK"}, {"dance": "45", "pub": "The Gallows", "town": "Milnrow", "day": "Saturday", "time": "18:52", "lat": 53.614269, "lon": -2.108634, "color": "#FF9F43", "maps": "https://www.google.com/maps/search/?api=1&query=The+Gallows%2C+Milnrow%2C+UK"}, {"dance": "46", "pub": "The Queens", "town": "Littleborough", "day": "Saturday", "time": "19:37", "lat": 53.643653, "lon": -2.096877, "color": "#45B7D1", "maps": "https://www.google.com/maps/search/?api=1&query=The+Queens%2C+Littleborough%2C+UK"}, {"dance": "47", "pub": "Falcon Inn", "town": "Littleborough", "day": "Saturday", "time": "20:01", "lat": 53.643899, "lon": -2.095625, "color": "#45B7D1", "maps": "https://www.google.com/maps/search/?api=1&query=Falcon+Inn%2C+Littleborough%2C+UK"}, {"dance": "48", "pub": "The Red Lion", "town": "Littleborough", "day": "Saturday", "time": "20:40", "lat": 53.643675, "lon": -2.092166, "color": "#45B7D1", "maps": "https://www.google.com/maps/search/?api=1&query=The+Red+Lion%2C+Littleborough%2C+UK"}];
+  const towns = [{"name": "Sowerby Bridge", "count": 12, "lat": 53.709165750000004, "lon": -1.9071105083333333, "color": "#FF6B6B"}, {"name": "Hebden Bridge", "count": 16, "lat": 53.74131878125, "lon": -2.01342680625, "color": "#4ECDC4"}, {"name": "Rochdale", "count": 9, "lat": 53.61750222222222, "lon": -2.157313933333333, "color": "#FFD93D"}, {"name": "Newhey", "count": 3, "lat": 53.60225496666667, "lon": -2.0971010999999997, "color": "#A78BFA"}, {"name": "Milnrow", "count": 5, "lat": 53.609067200000005, "lon": -2.1072082, "color": "#FF9F43"}, {"name": "Littleborough", "count": 3, "lat": 53.643742333333336, "lon": -2.094889333333333, "color": "#45B7D1"}];
+  const routes = {"Friday": ["Sowerby Bridge", "Hebden Bridge"], "Saturday": ["Rochdale", "Newhey", "Milnrow", "Littleborough"]};
+  const dayCol = {Friday: '#ff5c8a', Saturday: '#22d3ee'};
+  const townBy = Object.fromEntries(towns.map(t => [t.name, t]));
+
+  mapEl.innerHTML = '';
+  const map = new maplibregl.Map({
+    container: 'pub-map',
+    style: 'https://tiles.openfreemap.org/styles/dark',
+    center: [-2.06, 53.67],
+    zoom: 11,
+    minZoom: 6,
+    maxZoom: 17,
+    scrollZoom: false,
+    attributionControl: true
+  });
+  map.addControl(new maplibregl.NavigationControl({showCompass: false}), 'top-right');
+  map.addControl(new maplibregl.ScaleControl({unit: 'metric'}), 'bottom-left');
+
+  map.on('load', function () {
+    const pubData = {
+      type: 'FeatureCollection',
+      features: pubs.map(function (p) {
+        return {
+          type: 'Feature',
+          geometry: {type: 'Point', coordinates: [p.lon, p.lat]},
+          properties: p
+        };
+      })
+    };
+    const townData = {
+      type: 'FeatureCollection',
+      features: towns.map(function (t) {
+        return {
+          type: 'Feature',
+          geometry: {type: 'Point', coordinates: [t.lon, t.lat]},
+          properties: {label: t.name + ' · ' + t.count}
+        };
+      })
+    };
+    const routeData = {
+      type: 'FeatureCollection',
+      features: Object.entries(routes).map(function (entry) {
+        const day = entry[0];
+        const names = entry[1];
+        const coords = names.filter(function (n) { return townBy[n]; }).map(function (n) {
+          return [townBy[n].lon, townBy[n].lat];
+        });
+        return {
+          type: 'Feature',
+          properties: {color: dayCol[day] || '#94a3b8'},
+          geometry: {type: 'LineString', coordinates: coords}
+        };
+      }).filter(function (f) { return f.geometry.coordinates.length > 1; })
+    };
+
+    map.addSource('pubs', {
+      type: 'geojson',
+      data: pubData,
+      cluster: true,
+      clusterMaxZoom: 13,
+      clusterRadius: 40
+    });
+    map.addSource('towns', {type: 'geojson', data: townData});
+    map.addSource('routes', {type: 'geojson', data: routeData});
+
+    map.addLayer({
+      id: 'route-lines',
+      type: 'line',
+      source: 'routes',
+      layout: {'line-join': 'round', 'line-cap': 'round'},
+      paint: {
+        'line-color': ['get', 'color'],
+        'line-width': 2,
+        'line-opacity': 0.6,
+        'line-dasharray': [2, 2]
+      }
+    });
+    map.addLayer({
+      id: 'town-dots',
+      type: 'circle',
+      source: 'towns',
+      paint: {
+        'circle-radius': 3,
+        'circle-color': '#eef1fb',
+        'circle-opacity': 0.8,
+        'circle-stroke-color': '#0b1020',
+        'circle-stroke-width': 1
+      }
+    });
+    map.addLayer({
+      id: 'town-labels',
+      type: 'symbol',
+      source: 'towns',
+      layout: {
+        'text-field': ['get', 'label'],
+        'text-font': ['Noto Sans Regular'],
+        'text-size': 11,
+        'text-offset': [0, 1.2],
+        'text-anchor': 'top',
+        'text-allow-overlap': true,
+        'text-ignore-placement': true
+      },
+      paint: {
+        'text-color': '#eef1fb',
+        'text-halo-color': '#0b1020',
+        'text-halo-width': 1.5
+      }
+    });
+    map.addLayer({
+      id: 'clusters',
+      type: 'circle',
+      source: 'pubs',
+      filter: ['has', 'point_count'],
+      paint: {
+        'circle-color': 'rgba(12,17,32,0.94)',
+        'circle-radius': ['step', ['get', 'point_count'], 16, 5, 20, 10, 24],
+        'circle-stroke-color': '#4ecdc4',
+        'circle-stroke-width': 2,
+        'circle-opacity': 0.96
+      }
+    });
+    map.addLayer({
+      id: 'cluster-count',
+      type: 'symbol',
+      source: 'pubs',
+      filter: ['has', 'point_count'],
+      layout: {
+        'text-field': ['get', 'point_count_abbreviated'],
+        'text-font': ['Noto Sans Regular'],
+        'text-size': 11
+      },
+      paint: {'text-color': '#eef1fb'}
+    });
+    map.addLayer({
+      id: 'unclustered-pub',
+      type: 'circle',
+      source: 'pubs',
+      filter: ['!', ['has', 'point_count']],
+      paint: {
+        'circle-color': ['get', 'color'],
+        'circle-radius': 10,
+        'circle-stroke-color': '#fff',
+        'circle-stroke-width': 1.5
+      }
+    });
+    map.addLayer({
+      id: 'pub-labels',
+      type: 'symbol',
+      source: 'pubs',
+      filter: ['!', ['has', 'point_count']],
+      layout: {
+        'text-field': ['get', 'dance'],
+        'text-font': ['Noto Sans Regular'],
+        'text-size': 8.5,
+        'text-allow-overlap': true,
+        'text-ignore-placement': true
+      },
+      paint: {'text-color': '#071018'}
+    });
+
+    const bounds = new maplibregl.LngLatBounds();
+    pubs.forEach(function (p) { bounds.extend([p.lon, p.lat]); });
+    map.fitBounds(bounds, {padding: 40, maxZoom: 12, duration: 0});
+
+    const popup = new maplibregl.Popup({className: 'dark-popup', maxWidth: '270px'});
+    const tip = new maplibregl.Popup({
+      className: 'pub-tip-popup',
+      closeButton: false,
+      closeOnClick: false,
+      offset: 14,
+      maxWidth: '250px'
+    });
+
+    map.on('click', 'unclustered-pub', function (e) {
+      const p = e.features[0].properties;
+      const coords = e.features[0].geometry.coordinates.slice();
+      popup.setLngLat(coords).setHTML(
+        '<div class="map-pop">' +
+        '<div class="map-pop-kicker">Dance ' + p.dance + ' · ' + p.time + '</div>' +
+        '<div class="map-pop-title">' + p.pub + '</div>' +
+        '<div class="map-pop-town">' + p.town + ' · ' + p.day + '</div>' +
+        '<a href="' + p.maps + '" target="_blank" rel="noopener noreferrer">Open in Google Maps →</a>' +
+        '</div>'
+      ).addTo(map);
+    });
+
+    map.on('mouseenter', 'unclustered-pub', function (e) {
+      map.getCanvas().style.cursor = 'pointer';
+      const p = e.features[0].properties;
+      tip.setLngLat(e.features[0].geometry.coordinates)
+        .setHTML('<b>' + p.pub + '</b><br>' + p.town + ' · ' + p.time)
+        .addTo(map);
+    });
+    map.on('mouseleave', 'unclustered-pub', function () {
+      map.getCanvas().style.cursor = '';
+      tip.remove();
+    });
+
+    function clusterClick(e) {
+      const features = map.queryRenderedFeatures(e.point, {layers: ['clusters']});
+      if (!features.length) return;
+      const clusterId = features[0].properties.cluster_id;
+      map.getSource('pubs').getClusterExpansionZoom(clusterId, function (err, zoom) {
+        if (err) return;
+        map.easeTo({center: features[0].geometry.coordinates, zoom: zoom});
+      });
+    }
+    ['clusters', 'cluster-count'].forEach(function (layer) {
+      map.on('click', layer, clusterClick);
+      map.on('mouseenter', layer, function () { map.getCanvas().style.cursor = 'pointer'; });
+      map.on('mouseleave', layer, function () { map.getCanvas().style.cursor = ''; });
+    });
+
+    const jumps = document.getElementById('map-jumps');
+    towns.forEach(function (t) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'map-jump';
+      b.innerHTML = '<span class="dot" style="--c:' + t.color + '"></span><span>' + t.name + '</span><b>' + t.count + '</b>';
+      b.addEventListener('click', function () {
+        map.flyTo({center: [t.lon, t.lat], zoom: 14, duration: 900});
+      });
+      jumps.appendChild(b);
+    });
+  });
+}());
+</script>
+
 </body>
 </html>
